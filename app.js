@@ -38,18 +38,6 @@ $(document).ready(function(){
     for (let i = 0; i < numberOfEls; i++) createEl(i);
 })
 
-
-
-
-
-
-
-
-
-
-
-
-
 document.addEventListener('DOMContentLoaded',function(event){
     // array with texts to type in typewriter
     var dataText = [ "Learn what feelings you've been listening lately..."];
@@ -80,52 +68,33 @@ document.addEventListener('DOMContentLoaded',function(event){
             StartTextAnimation(0);
           }, 20000);
        }
+        if(dataText[i] != undefined){
+            console.log(dataText[i] != undefined);
        // check if dataText[i] exists
-      if (i < dataText[i].length) {
+       if (i < dataText[i].length) {
         // text exists! start typewriter animation
        typeWriter(dataText[i], 0, function(){
          // after callback (and whole text has been animated), start next text
          StartTextAnimation(i + 1);
        });
       }
+        }
     }
     // start the text animation
     StartTextAnimation(0);
   });
 
-
-
-
-
-
-
-
-
-//var redirect_uri = "https://makeratplay.github.io/SpotifyWebAPI/"; // change this your value
-var redirect_uri = "http://127.0.0.1:5500/index.html";
- 
+var redirect_uri = "http://127.0.0.1:5500/index.html"; 
 
 var client_id = "6bc594ec59a74f8f9e73aacbd0a2e628"; 
 var client_secret = "366e38d096fe47e6836b5f8ebf6d9b05"; // In a real app you should not expose your client_secret to the user
 
 var access_token = null;
 var refresh_token = null;
-var currentPlaylist = "";
-var radioButtons = [];
 
 const AUTHORIZE = "https://accounts.spotify.com/authorize"
 const TOKEN = "https://accounts.spotify.com/api/token";
-const PLAYLISTS = "https://api.spotify.com/v1/me/playlists";
-const DEVICES = "https://api.spotify.com/v1/me/player/devices";
-const PLAY = "https://api.spotify.com/v1/me/player/play";
-const PAUSE = "https://api.spotify.com/v1/me/player/pause";
-const NEXT = "https://api.spotify.com/v1/me/player/next";
-const PREVIOUS = "https://api.spotify.com/v1/me/player/previous";
-const PLAYER = "https://api.spotify.com/v1/me/player";
-const TRACKS = "https://api.spotify.com/v1/playlists/{{PlaylistId}}/tracks";
-const CURRENTLYPLAYING = "https://api.spotify.com/v1/me/player/currently-playing";
-const SHUFFLE = "https://api.spotify.com/v1/me/player/shuffle";
-const TOPTRACKS = "https://api.spotify.com/v1/me/top/tracks";
+const TOPTRACKS = "https://api.spotify.com/v1/me/top/tracks?time_range=short_term";
 const key_feelings = {
     "C MAJOR": [
         "Innocently Happy",
@@ -226,14 +195,30 @@ const key_feelings = {
 }
 
 const translate_keys = {
-    "Fm": "F MINOR",
     "C": "C MAJOR",
+    "Cm": "C MINOR",
+    "C♯": "C# MINOR",
+    "DB": "DB MAJOR",
+    "D": "D MAJOR",
+    "Dm": "D MINOR",
+    "D♯": "D# MINOR",
+    "EB": "EB MAJOR",
     "E": "E MAJOR",
-    "Am": "A MINOR",
-    "Gm": "G MINOR",
+    "Em": "E MINOR",
     "F": "F MAJOR",
+    "Fm": "F MINOR",
+    "F♯": "F# MAJOR",
+    "F♯m": "F# MINOR",
+    "G": "G MAJOR",
+    "Gm": "G MINOR",
+    "AB": "AB MAJOR",
+    "ABm": "AB MINOR",
     "A": "A MAJOR",
-    "G": "G MAJOR"
+    "Am": "A MINOR",
+    "BB": "BB MAJOR",
+    "BBm": "BB MINOR",
+    "B": "B MAJOR",
+    "Bm": "B MINOR",
 }
 
 function onPageLoad(){
@@ -250,13 +235,10 @@ function onPageLoad(){
             // we have an access token so present device section
             document.getElementById("deviceSection").style.display = 'block';  
             $("#entry").hide();
-            refreshDevices();
-            refreshPlaylists();
-            currentlyPlaying();
+            $(".loading").show();
             getTopTracks();
         }
     }
-    refreshRadioButtons();
 }
 
 function handleRedirect(){
@@ -281,7 +263,7 @@ function requestAuthorization(){
     url += "&response_type=code";
     url += "&redirect_uri=" + encodeURI(redirect_uri);
     url += "&show_dialog=true";
-    url += "&scope=user-read-private user-top-read user-read-email user-modify-playback-state user-read-playback-position user-library-read streaming user-read-playback-state user-read-recently-played playlist-read-private";
+    url += "&scope=user-top-read";
     window.location.href = url; // Show Spotify's authorization screen
 }
 
@@ -314,7 +296,6 @@ function callAuthorizationApi(body){
 function handleAuthorizationResponse(){
     if ( this.status == 200 ){
         var data = JSON.parse(this.responseText);
-        console.log(data);
         var data = JSON.parse(this.responseText);
         if ( data.access_token != undefined ){
             access_token = data.access_token;
@@ -327,36 +308,8 @@ function handleAuthorizationResponse(){
         onPageLoad();
     }
     else {
-        console.log(this.responseText);
         alert(this.responseText);
     }
-}
-
-function refreshDevices(){
-    callApi( "GET", DEVICES, null, handleDevicesResponse );
-}
-
-function handleDevicesResponse(){
-    if ( this.status == 200 ){
-        var data = JSON.parse(this.responseText);
-        console.log(data);
-        removeAllItems( "devices" );
-        data.devices.forEach(item => addDevice(item));
-    }
-    else if ( this.status == 401 ){
-        refreshAccessToken()
-    }
-    else {
-        console.log(this.responseText);
-        alert(this.responseText);
-    }
-}
-
-function addDevice(item){
-    let node = document.createElement("option");
-    node.value = item.id;
-    node.innerHTML = item.name;
-    document.getElementById("devices").appendChild(node); 
 }
 
 function callApi(method, url, body, callback){
@@ -368,10 +321,6 @@ function callApi(method, url, body, callback){
     xhr.onload = callback;
 }
 
-function refreshPlaylists(){
-    callApi( "GET", PLAYLISTS, null, handlePlaylistsResponse );
-}
-
 function getTopTracks(){
     callApi( "GET", TOPTRACKS, null, handleTopTracks );
 }
@@ -379,269 +328,54 @@ function getTopTracks(){
 function handleTopTracks(){
     if ( this.status == 200 ){
         var data = JSON.parse(this.responseText);
+        var loading = 0;
+        var maxLoading = data.items.length;
         data.items.forEach(track => {
-            console.log(track);
-            //$(".list").append("<li><img class='track-img' src='" + track.album.images[0].url + "'/><h1 class='text-white'>" + track.name + "</h1></li>");
             axios.get('https://api.getsongbpm.com/search/?api_key=53fb0a80c6060b940acf22488eed7a6b&type=song&lookup=' + track.name)
             .then(function (response) {
-                if(response.data.search[0]['id'] === "undefined"){
-                    //$(element).append(" is key of: not found");
+                loading++;
+                if(loading == maxLoading){
+                    $("#slides").show();
+                    $("#titles").show();
+                    $("#steps").show();
+                    $(".loading").hide();
+                }
+                var loadingItems = $(".loading li");
+                for (let index = 0; index < loading; index++) {
+                    let indexItem = parseInt(index/2);
+                    $(loadingItems[indexItem]).removeClass("pulsing");
+                    $(loadingItems[indexItem]).addClass("active");
+                    if(loading - 1 == index){
+                        $(loadingItems[indexItem]).addClass("pulsing");
+                    }
+                }
+                if(response.data.search["error"] === "no result"){
+                    console.log("No result: ", track.name);
                 }else{
                     axios.get('https://api.getsongbpm.com/song/?api_key=53fb0a80c6060b940acf22488eed7a6b&id=' + response.data.search[0]['id'])
                     .then(function (sReponse) {
-                        console.log(key_feelings[translate_keys[sReponse.data.song.key_of]][0])
-                        //$(element).find('h1').append(" is key of: " + key_feelings[translate_keys[sReponse.data.song.key_of]][0]);
+                        console.log(sReponse.data.song.key_of[0], translate_keys[sReponse.data.song.key_of][0], key_feelings[translate_keys[sReponse.data.song.key_of]][0]);
                         $("#steps").append("<li>"+sReponse.data.song.key_of+"</li>");
                         $("#slides ul").append("<li style='background-image: url(" + track.album.images[0].url + ");'></li>")
                         $("#titles ul").append("<li><h2>"+ track.name +"</h2><h4>"+key_feelings[translate_keys[sReponse.data.song.key_of]][0]+"</h4><p>"+key_feelings[translate_keys[sReponse.data.song.key_of]][1]+"</p></li>");
-                        var script = document.createElement('script');
-                        script.onload = function () {
-                            //do stuff with the script
-                        };
-                        script.src = "slideshow.js";
-                
-                        document.head.appendChild(script);
+                        if(loading == maxLoading){
+                            var script = document.createElement('script');
+                            script.onload = function () {
+                                //do stuff with the script
+                            };
+                            script.src = "slideshow.js";
+                    
+                            document.head.appendChild(script);
+                        }
                     });
                 }
             });
         })
-        console.log($("#slides ul").length);
-        // $(".list li").each(track =>{
-        //     let element = $('.list li')[track]
-        //     let trackName = $(element).text()
-        //     trackName = trackName.replace(/[^a-zA-Z ]/g, "");
-        //     trackName = trackName.replaceAll(" ", "+");
-        //     //TODO: Turn this to one call only
-        //     axios.get('https://api.getsongbpm.com/search/?api_key=53fb0a80c6060b940acf22488eed7a6b&type=song&lookup=' + trackName)
-        //     .then(function (response) {
-        //         if(response.data.search[0]['id'] === "undefined"){
-        //             $(element).append(" is key of: not found");
-        //         }else{
-        //             axios.get('https://api.getsongbpm.com/song/?api_key=53fb0a80c6060b940acf22488eed7a6b&id=' + response.data.search[0]['id'])
-        //             .then(function (sReponse) {
-        //                 $(element).find('h1').append(" is key of: " + key_feelings[translate_keys[sReponse.data.song.key_of]][0]);
-        //             });
-        //         }
-        //     });
-        // })
-        removeAllItems( "playlists" );
-        data.items.forEach(item => addPlaylist(item));
-        document.getElementById('playlists').value=currentPlaylist;
     }
     else if ( this.status == 401 ){
-        // refreshAccessToken()
+        console.log("401");
     }
     else {
-        console.log(this.responseText);
         alert(this.responseText);
     }
-}
-
-function trackKeys(){
-    console.log(this);
-    if(this.status == 200){
-        console.log(this.responseText);
-    }
-}
-
-function handlePlaylistsResponse(){
-    if ( this.status == 200 ){
-        var data = JSON.parse(this.responseText);
-        console.log(data);
-        removeAllItems( "playlists" );
-        data.items.forEach(item => addPlaylist(item));
-        document.getElementById('playlists').value=currentPlaylist;
-    }
-    else if ( this.status == 401 ){
-        refreshAccessToken()
-    }
-    else {
-        console.log(this.responseText);
-        alert(this.responseText);
-    }
-}
-
-function addPlaylist(item){
-    let node = document.createElement("option");
-    node.value = item.id;
-    node.innerHTML = item.name + " (" + item.tracks.total + ")";
-    document.getElementById("playlists").appendChild(node); 
-}
-
-function removeAllItems( elementId ){
-    let node = document.getElementById(elementId);
-    while (node.firstChild) {
-        node.removeChild(node.firstChild);
-    }
-}
-
-function play(){
-    let playlist_id = document.getElementById("playlists").value;
-    let trackindex = document.getElementById("tracks").value;
-    let album = document.getElementById("album").value;
-    let body = {};
-    if ( album.length > 0 ){
-        body.context_uri = album;
-    }
-    else{
-        body.context_uri = "spotify:playlist:" + playlist_id;
-    }
-    body.offset = {};
-    body.offset.position = trackindex.length > 0 ? Number(trackindex) : 0;
-    body.offset.position_ms = 0;
-    callApi( "PUT", PLAY + "?device_id=" + deviceId(), JSON.stringify(body), handleApiResponse );
-}
-
-function shuffle(){
-    callApi( "PUT", SHUFFLE + "?state=true&device_id=" + deviceId(), null, handleApiResponse );
-    play(); 
-}
-
-function pause(){
-    callApi( "PUT", PAUSE + "?device_id=" + deviceId(), null, handleApiResponse );
-}
-
-function next(){
-    callApi( "POST", NEXT + "?device_id=" + deviceId(), null, handleApiResponse );
-}
-
-function previous(){
-    callApi( "POST", PREVIOUS + "?device_id=" + deviceId(), null, handleApiResponse );
-}
-
-function transfer(){
-    let body = {};
-    body.device_ids = [];
-    body.device_ids.push(deviceId())
-    callApi( "PUT", PLAYER, JSON.stringify(body), handleApiResponse );
-}
-
-function handleApiResponse(){
-    if ( this.status == 200){
-        console.log(this.responseText);
-        setTimeout(currentlyPlaying, 2000);
-    }
-    else if ( this.status == 204 ){
-        setTimeout(currentlyPlaying, 2000);
-    }
-    else if ( this.status == 401 ){
-        refreshAccessToken()
-    }
-    else {
-        console.log(this.responseText);
-        alert(this.responseText);
-    }    
-}
-
-function deviceId(){
-    return document.getElementById("devices").value;
-}
-
-function fetchTracks(){
-    let playlist_id = document.getElementById("playlists").value;
-    if ( playlist_id.length > 0 ){
-        url = TRACKS.replace("{{PlaylistId}}", playlist_id);
-        callApi( "GET", url, null, handleTracksResponse );
-    }
-}
-
-function handleTracksResponse(){
-    if ( this.status == 200 ){
-        var data = JSON.parse(this.responseText);
-        console.log(data);
-        removeAllItems( "tracks" );
-        data.items.forEach( (item, index) => addTrack(item, index));
-    }
-    else if ( this.status == 401 ){
-        refreshAccessToken()
-    }
-    else {
-        console.log(this.responseText);
-        alert(this.responseText);
-    }
-}
-
-function addTrack(item, index){
-    let node = document.createElement("option");
-    node.value = index;
-    node.innerHTML = item.track.name + " (" + item.track.artists[0].name + ")";
-    document.getElementById("tracks").appendChild(node); 
-}
-
-function currentlyPlaying(){
-    callApi( "GET", PLAYER + "?market=US", null, handleCurrentlyPlayingResponse );
-}
-
-function handleCurrentlyPlayingResponse(){
-    if ( this.status == 200 ){
-        var data = JSON.parse(this.responseText);
-        console.log(data);
-        if ( data.item != null ){
-            document.getElementById("albumImage").src = data.item.album.images[0].url;
-            document.getElementById("trackTitle").innerHTML = data.item.name;
-            document.getElementById("trackArtist").innerHTML = data.item.artists[0].name;
-        }
-
-
-        if ( data.device != null ){
-            // select device
-            currentDevice = data.device.id;
-            document.getElementById('devices').value=currentDevice;
-        }
-
-        if ( data.context != null ){
-            // select playlist
-            currentPlaylist = data.context.uri;
-            currentPlaylist = currentPlaylist.substring( currentPlaylist.lastIndexOf(":") + 1,  currentPlaylist.length );
-            document.getElementById('playlists').value=currentPlaylist;
-        }
-    }
-    else if ( this.status == 204 ){
-
-    }
-    else if ( this.status == 401 ){
-        refreshAccessToken()
-    }
-    else {
-        console.log(this.responseText);
-        alert(this.responseText);
-    }
-}
-
-function saveNewRadioButton(){
-    let item = {};
-    item.deviceId = deviceId();
-    item.playlistId = document.getElementById("playlists").value;
-    radioButtons.push(item);
-    localStorage.setItem("radio_button", JSON.stringify(radioButtons));
-    refreshRadioButtons();
-}
-
-function refreshRadioButtons(){
-    let data = localStorage.getItem("radio_button");
-    if ( data != null){
-        radioButtons = JSON.parse(data);
-        if ( Array.isArray(radioButtons) ){
-            removeAllItems("radioButtons");
-            radioButtons.forEach( (item, index) => addRadioButton(item, index));
-        }
-    }
-}
-
-function onRadioButton( deviceId, playlistId ){
-    let body = {};
-    body.context_uri = "spotify:playlist:" + playlistId;
-    body.offset = {};
-    body.offset.position = 0;
-    body.offset.position_ms = 0;
-    callApi( "PUT", PLAY + "?device_id=" + deviceId, JSON.stringify(body), handleApiResponse );
-    //callApi( "PUT", SHUFFLE + "?state=true&device_id=" + deviceId, null, handleApiResponse );
-}
-
-function addRadioButton(item, index){
-    let node = document.createElement("button");
-    node.className = "btn btn-primary m-2";
-    node.innerText = index;
-    node.onclick = function() { onRadioButton( item.deviceId, item.playlistId ) };
-    document.getElementById("radioButtons").appendChild(node);
 }

@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded',function(event){
     StartTextAnimation(0);
   });
 
-var redirect_uri = "http://127.0.0.1:5500/index.html"; 
+var redirect_uri = "https://arditxhaferi.github.io/areuok-/"; 
 
 var client_id = "6bc594ec59a74f8f9e73aacbd0a2e628"; 
 var client_secret = "366e38d096fe47e6836b5f8ebf6d9b05"; // In a real app you should not expose your client_secret to the user
